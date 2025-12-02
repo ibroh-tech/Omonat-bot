@@ -11,6 +11,8 @@ from database import (
     get_users_with_incomplete_forms,
     save_region,
     get_region_this_month,
+    reset_current_month_data,
+    delete_answer_current_month,
 )
 from config import BOT_TOKEN
 
@@ -22,55 +24,156 @@ LAST_MESSAGE_ID: dict[int, int] = {}
 
 # Minimal in-memory cache for speed. DB is the source of truth!
 user_progress: dict[int, int] = {}  # user_id -> next question index (0-based)
+selected_region: dict[int, int] = {}  # user_id -> region id chosen in current flow
+expected_open_question: dict[int, int] = {}  # user_id -> question_id awaiting free-text
 
-# Regional options. Adjust to your actual data.
+# Regional options
 REGIONS: dict[str, list[str]] = {
-    "North": ["North-1", "North-2", "North-3"],
-    "South": ["South-1", "South-2"],
-    "East": ["East-1", "East-2"],
-    "West": ["West-1"],
+    "Тошкент шаҳри": [],
+    "Тошкент вилояти": [
+        "Бекобод тумани", "Бўка тумани", "Бостанлиқ тумани", "Қибрай тумани",
+        "Паркент тумани", "Ўртачирчиқ тумани", "Қуйичирчиқ тумани", "Янгийўл тумани",
+        "Чиноз тумани", "Зангиота тумани", "Тошкент тумани", "Юқоричирчиқ тумани",
+        "Охангарон тумани", "Ангрен (шаҳар ҳуқуқида)", "Олмалиқ (шаҳар ҳуқуқида)", "Чирчиқ (шаҳар ҳуқуқида)",
+    ],
+    "Самарқанд вилояти": [
+        "Булунғур тумани", "Жомбой тумани", "Иштихон тумани", "Каттақўрғон тумани",
+        "Қўшработ тумани", "Нарпай тумани", "Оқдарё тумани", "Пастдарғом тумани",
+        "Пайариқ тумани", "Самарқанд тумани", "Нурабод тумани", "Тойлоқ тумани", "Ургут тумани",
+    ],
+    "Фарғона вилояти": [
+        "Бувайда тумани", "Бешариқ тумани", "Боғдод тумани", "Учкўприк тумани",
+        "Риштон тумани", "Қува тумани", "Қувасой тумани", "Фурқат тумани",
+        "Олтиариқ тумани", "Данғара тумани", "Тошлоқ тумани", "Ёзёвон тумани",
+        "Сўх тумани", "Ўзбекистон тумани", "Қўштепа тумани",
+    ],
+    "Андижон вилояти": [
+        "Андижон тумани", "Асакa тумани", "Балиқчи тумани", "Бўстон тумани",
+        "Булоқбоши тумани", "Жалақудуқ тумани", "Избоскан тумани", "Қўрғонтепа тумани",
+        "Марҳамат тумани", "Олтинкўл тумани", "Пахтаобод тумани", "Улуғнор тумани", "Шаҳрихон тумани",
+    ],
+    "Наманган вилояти": [
+        "Наманган тумани", "Косонсой тумани", "Чуст тумани", "Учқўрғон тумани",
+        "Тўрақўрғон тумани", "Поп тумани", "Норин тумани", "Уйчи тумани",
+        "Янгикўрғон тумани", "Чортоқ тумани",
+    ],
+    "Бухоро вилояти": [
+        "Бухоро тумани", "Когон тумани", "Вобкент тумани", "Ғиждувон тумани",
+        "Жондор тумани", "Қоракўл тумани", "Қоровулбозор тумани", "Олот тумани",
+        "Пешку тумани", "Ромитан тумани", "Шофиркон тумани",
+    ],
+    "Хоразм вилояти": [
+        "Урганч тумани", "Хонқа тумани", "Хазорасп тумани", "Гурлан тумани",
+        "Янгибозор тумани", "Боғот тумани", "Шовот тумани", "Қўшкўпир тумани", "Тупроққалъа тумани",
+    ],
+    "Қашқадарё вилояти": [
+        "Қарши тумани", "Касби тумани", "Китоб тумани", "Қамаши тумани",
+        "Миришкор тумани", "Муборак тумани", "Нишон тумани", "Деҳқонобод тумани",
+        "Чироқчи тумани", "Шаҳрисабз тумани", "Яккабоғ тумани",
+    ],
+    "Сурхондарё вилояти": [
+        "Термиз тумани", "Ангор тумани", "Бандихон тумани", "Бойсун тумани",
+        "Денау тумани", "Жарқўрғон тумани", "Қизириқ тумани", "Қумқўрғон тумани",
+        "Музработ тумани", "Олтинсой тумани", "Сариосиё тумани", "Шеробод тумани", "Шўрчи тумани",
+    ],
+    "Жиззах вилояти": [
+        "Арнасой тумани", "Бахмал тумани", "Ғаллаорол тумани", "Дўстлик тумани",
+        "Зафаробод тумани", "Зарбдор тумани", "Зомин тумани", "Мирзачўл тумани",
+        "Пахтакор тумани", "Фориш тумани", "Шароф Рашидов тумани",
+    ],
+    "Сирдарё вилояти": [
+        "Боёвут тумани", "Гулистон тумани", "Мирзаобод тумани", "Оқолтин тумани",
+        "Сайхунобод тумани", "Сардоба тумани", "Сырдарё тумани", "Ховос тумани",
+    ],
+    "Навоий вилояти": [
+        "Кармана тумани", "Қизилтепа тумани", "Конимех тумани", "Навбаҳор тумани",
+        "Навоий тумани", "Нуратa тумани", "Томди тумани", "Учқудуқ тумани",
+    ],
+    "Қорақалпоғистон Республикаси": [
+        "Амударё тумани", "Беруний тумани", "Қонликўл тумани", "Қораузак тумани",
+        "Қўнғирот тумани", "Мўйноқ тумани", "Нукус тумани", "Тахтакўпир тумани",
+        "Тўрткўл тумани", "Хўжайли тумани", "Чимбой тумани", "Шуманай тумани",
+    ],
 }
 
-# Questions are now defined in this file.
+# Build region/subregion indices for compact callback_data (avoid 64-byte limit)
+REGION_NAMES = list(REGIONS.keys())
+REGION_INDEX = {name: i for i, name in enumerate(REGION_NAMES)}
+SUB_LISTS = [REGIONS[name] for name in REGION_NAMES]
+
+# Full 37 questions
 QUESTIONS = [
-    {
-        "text": "How satisfied are you with our service?",
-        "options": ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied", "Very dissatisfied"],
-    },
-    {
-        "text": "How likely are you to recommend us to a friend?",
-        "options": ["Very likely", "Likely", "Not sure", "Unlikely", "Very unlikely"],
-    },
-    {
-        "text": "Which channel do you prefer for updates?",
-        "options": ["Telegram", "Email", "SMS", "Website"],
-    },
+    # A. Сегментация
+    {"text": "3. Ёшингиз неччида?", "options": ["18–24", "25–34", "35–44", "45–54", "55–64", "65+"]},
+    {"text": "4. Қаерда ишлайсиз?", "options": ["Давлат ташкилоти", "Нодавлат ташкилоти", "Хусусий ташкилот", "Тадбиркорман", "Ўз-ўзимни банд қилганман", "Бошқа"]},
+    {"text": "5. Ойда ўртача нечи марта банкка ташриф буюрасиз?", "options": ["1-2 марта", "3-4 марта", "5-6 марта"]},
+    {"text": "6. Навбатда туриш қанча вақт олади?", "options": ["15 дақиқа", "30 дақиқа", "60 дақиқа", "1 соатдан кўп"]},
+    # B. Мижозларнинг банкда ўтказадиган вақти
+    {"text": "7. Кассада қайси тўловни амалга оширасиз?", "options": ["Коммунал хизматлар", "Солиқлар / жарималар", "Таълим тўлови", "Мобил ёки интернет тўловлари", "Касса амалиётлари", "Бошқа ___________"]},
+    {"text": "8. Нима учун тўловни касса орқали амалга оширишни афзал кўрасиз?", "options": ["Иловадан фойдалана олмайман", "Онлайн тўловларга ишонч йўқ", "Коғозли квитанция олиш учун", "Бошқа ___________", ""]},
+    {"text": "9. Касса орқали тўлов амалга оширишда қайси қийинчиликларга дуч келасиз?", "options": ["Навбат узоқ", "Ходим секин ишлайди", "Қийинчилик йўқ"]},
+    # C. Мижозларнинг банк ва тўлов инструментларига бўлган одатлари ва фикрларини билиш
+    {"text": "10. Agrobank мобил иловаси орқали тўлов амалга оширасизми?", "options": ["Ҳа", "Йўқ"]},
+    {"text": "11. Paynet инфокиоскидан фойдаланганмисиз?", "options": ["Ҳа", "Йўқ"]},
+    {"text": "12. Сизнингча, тўлов жараёнини янада тез ва қулай қилиш учун нима керак?", "options": []},
+    # D. Хизмат сифатини ошириш
+    {"text": "13. Банк офисларида хизмат сифатини 10 баллик шкала бўйича қандай баҳолайсиз?", "options": [str(i) for i in range(1, 11)]},
+    {"text": "14. Қайси хизматлар онлайн тақдим этилса янада қулай бўлар эди?", "options": ["Мобил илова орқали", "Банк сайти орқали", "Алоқа маркази орқали", "Ўз-ўзига хизмат кўрсатиш терминаллари орқали"]},
+    {"text": "15. Онлайн хизматлардан тез-тез фойдаланишга сизни нима рағбатлантиради?", "options": ["Осон ва тушунарли инструкциялар", "Хавфсизлик таъминоти кучлилиги", "Онлайн-амалиётлар учун чегирма ва бонуслар", "Ходимнинг онлайн ёрдами", "Бошқа"]},
+    {"text": "16. Мобил илова қулай бўлса, филиалга ташрифингиз қанчага камаяди?", "options": ["Умуман бормайман", "Камроқ бораман", "Камаймайди"]},
+    {"text": "17. Иловада қайси хизматларни онлайн кўришни истайсиз?", "options": []},
+    {"text": "18. Янгича хизмат жорий қилинса, қайси бири фойдали бўлади?", "options": []},
+    {"text": "19. Мобил илова дизайнини қандай баҳолайсиз?", "options": ["Зўр", "Ўртача", "Ёқмади"]},
+    {"text": "20. Тўлов вақтини 50% га камайтириш учун банк қайси чорани амалга ошириши керак?", "options": ["Қўшимча кассалар очиш", "Мобил ва онлайн тўлов имкониятларини кенгайтириш", "Навбатларни автоматлаштириш / рақамли навбат тизими"]},
+    {"text": "21. Сиз учун хизмат қулайлигида қайси омил биринчи ўринда?", "options": ["Навбат вақти қисқалиги", "Тўлов ва хизматларнинг тезлиги", "Хизмат сифати", "Онлайн ва мобил хизматлар имконияти", "Банк жойлашуви (филиалнинг қулайлиги)"]},
+    {"text": "22. Агар сиз банк ходими бўлганингизда, биринчи қандай хизматни ривожлантирган бўлардингиз?", "options": ["Онлайн ва мобил банк хизматларини оптималлаштириш", "Навбат ва тўлов жараёнларини самаралилаштириш", "Мижозларга консультация ва ёрдам кўрсатиш сифатини ошириш", "Янги инновацион банк хизматларини жорий қилиш"]},
+    {"text": "23. Қайси янги хизмат ёки функция сиз учун ҳақиқатан ҳам керак бўлар эди?", "options": []},
+    {"text": "24. Қайси вилоятда яшайсиз?", "options": list(REGIONS.keys())},
+    {"text": "25. Қайси шаҳарда (туман) истиқомат қиласиз?", "options": []},
+    {"text": "26. Ёшингиз неччида?", "options": ["18–24", "25–34", "35–44", "45–54", "55–64", "65+"]},
+    {"text": "27. Қаерда ишлайсиз?", "options": ["Давлат ташкилоти", "Нодавлат ташкилоти", "Хусусий ташкилот", "Тадбиркорман", "Ўз-ўзимни банд қилганман"]},
+    {"text": "28. Қайси турдаги омонатни сақлайсиз?", "options": ["Сандиқ", "Комфорт", "Прогресс", "Нихол", "Бахтли болалик", "Стимул", "Премиум"]},
+    {"text": "29. Омонат очишингизга нима туртки бўлган?", "options": ["Фоизлардан даромад олиш", "Пулни хавфсиз сақлаш", "Банкнинг ишончлилиги ва обрўси", "Онлайн ва мобил хизматлар имконияти"]},
+    {"text": "30. Бошқа банкларда омонат сақлайсизми?", "options": ["Ҳа", "Йўқ"]},
+    {"text": "31. Иловадан омонат бўйича қандай қийинчиликларга дуч келгансиз?", "options": ["Тизимда техник муаммолар бор", "Маълумот топиш қийин", "Процесс тушунарсиз ва мураккаб", "Тўлов ва аризаларда қийинчиликлар", "Ҳеч қандай қийинчилик йўқ"]},
+    {"text": "32. Қандай қўшимча функциялар керак деб ўйлайсиз?", "options": ["Автомат эслатмалар ва хабарномалар", "Онлайн маслаҳат / чат хизмати", "Очиқ жавоб"]},
+    {"text": "33. Омонат очиш сиздан қанча вақт олади?", "options": ["5–15 дақиқа", "30 дақиқа", "60 дақиқа", "1 соатдан кўп"]},
+    {"text": "34. Омонат муддатлари неча ойгача бўлиши сизга қулай?", "options": ["13 ой", "18 ой", "24 ой", "24 ойдан кўп"]},
+    {"text": "35. Сиз учун қайси турдаги омонат қулай?", "options": ["Тўлдириш мумкин бўлган", "Ечиб олиш мумкин бўлган", "Хорижий валютада", "Муддатли"]},
+    {"text": "36. Агробанк омонатларидан келгусида фойдаланиш эҳтимолингизни баҳоланг (0–10)", "options": [str(i) for i in range(0, 11)]},
+    {"text": "37. Қайси муддатдаги омонат сизга кўпроқ қулай?", "options": ["13 ой", "18 ой", "24 ой"]},
 ]
 
+# ---------------------------
+# Keyboards
+# ---------------------------
 def build_region_keyboard() -> InlineKeyboardMarkup:
     inline_keyboard = [
-        [InlineKeyboardButton(text=region, callback_data=f"REG:{region}")]
-        for region in REGIONS.keys()
+        [InlineKeyboardButton(text=name, callback_data=f"REG:{i}")]
+        for i, name in enumerate(REGION_NAMES)
     ]
     return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 def build_subregion_keyboard(region: str) -> InlineKeyboardMarkup:
-    subs = REGIONS.get(region, [])
+    rid = REGION_INDEX.get(region, -1)
+    subs = SUB_LISTS[rid] if 0 <= rid < len(SUB_LISTS) else []
     inline_keyboard = [
-        [InlineKeyboardButton(text=sub, callback_data=f"SUB:{region}|{sub}")]
-        for sub in subs
+        [InlineKeyboardButton(text=sub, callback_data=f"SUB:{rid}|{j}")]
+        for j, sub in enumerate(subs)
     ]
+    inline_keyboard.append([InlineKeyboardButton(text="◀️ Orqaga", callback_data="BACK:REG")])
     return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 def build_keyboard_for_question(question_id: int) -> InlineKeyboardMarkup:
     q = QUESTIONS[question_id]
-    # callback_data: "<question_id>:<option_index>"
+    options = q.get("options") or []
     inline_keyboard = [
         [InlineKeyboardButton(text=o, callback_data=f"{question_id}:{i}")]
-        for i, o in enumerate(q["options"])
+        for i, o in enumerate(options)
     ]
+    # Always include back button
+    inline_keyboard.append([InlineKeyboardButton(text="◀️ Orqaga", callback_data=f"BACKQ:{question_id}")])
     return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
-
 async def send_or_edit_question(chat_id: int, question_id: int):
     """
     Edit existing message if present, otherwise send a new one.
@@ -78,6 +181,26 @@ async def send_or_edit_question(chat_id: int, question_id: int):
     """
     question = QUESTIONS[question_id]
     text = f"❓ {question['text']}"
+
+    options = question.get("options") or []
+    # If open-ended (no options), prompt user to type the answer and set waiting state
+    if len(options) == 0:
+        text_open = f"❓ {question['text']}\n\nJavobingizni matn ko'rinishida yuboring."
+        expected_open_question[chat_id] = question_id
+        if chat_id in LAST_MESSAGE_ID:
+            try:
+                await bot.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=LAST_MESSAGE_ID[chat_id],
+                    text=text_open,
+                    reply_markup=None,
+                )
+                return
+            except Exception:
+                pass
+        msg = await bot.send_message(chat_id=chat_id, text=text_open)
+        LAST_MESSAGE_ID[chat_id] = msg.message_id
+        return
 
     reply_markup = build_keyboard_for_question(question_id)
 
@@ -101,40 +224,68 @@ async def send_or_edit_question(chat_id: int, question_id: int):
 @dp.message(Command("start"))
 async def start(message: types.Message):
     user_id = message.from_user.id
-
-    # Enforce monthly completion limit
+    # Enforce: only one completed submission per month
     if has_completed_this_month(user_id, total_questions=len(QUESTIONS)):
         await message.answer("You have already completed the form for this month. Please try again next month.")
         return
 
-    # Ensure region/subregion is captured for this month before questions
-    region_info = get_region_this_month(user_id)
-    if not region_info:
-        text = "Please select your region:"
-        kb = build_region_keyboard()
-        msg = await message.answer(text, reply_markup=kb)
-        LAST_MESSAGE_ID[user_id] = msg.message_id
+    # Prompt region selection to begin the survey
+    text = "Please select your region:"
+    kb = build_region_keyboard()
+    msg = await message.answer(text, reply_markup=kb)
+    LAST_MESSAGE_ID[user_id] = msg.message_id
+    user_progress[user_id] = 0
+    return
+
+@dp.message(Command("my_region"))
+async def my_region(message: types.Message):
+    user_id = message.from_user.id
+    info = get_region_this_month(user_id)
+    if not info:
+        await message.answer("No region saved for this month.")
         return
+    region, sub = info
+    await message.answer(f"Current month region: {region} / {sub}")
 
-    # compute current progress from DB (answers this month) after region is set
-    index = get_last_answer_index(user_id)
-    user_progress[user_id] = index
-
-    if index >= len(QUESTIONS):
-        await message.answer("You have already completed all questions.")
+@dp.message(Command("region"))
+async def region_cmd(message: types.Message):
+    user_id = message.from_user.id
+    if has_completed_this_month(user_id, total_questions=len(QUESTIONS)):
+        await message.answer("You have already completed the form for this month. Please try again next month.")
         return
-
-    await send_or_edit_question(user_id, index)
-
+    text = "Iltimos hududingizni tanlang!:"
+    kb = build_region_keyboard()
+    msg = await message.answer(text, reply_markup=kb)
+    LAST_MESSAGE_ID[user_id] = msg.message_id
+    user_progress[user_id] = 0
+    return
 @dp.callback_query()
 async def handle_callback(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     data = callback.data or ""
-    # Handle region selection
+    # 1) Region selection
     if data.startswith("REG:"):
-        region = data.split(":", 1)[1]
-        if region not in REGIONS:
-            await callback.answer("Invalid region.", show_alert=True)
+        try:
+            rid = int(data.split(":", 1)[1])
+        except Exception:
+            return await callback.answer("Invalid region.", show_alert=True)
+        if not (0 <= rid < len(REGION_NAMES)):
+            return await callback.answer("Invalid region.", show_alert=True)
+        region = REGION_NAMES[rid]
+        selected_region[user_id] = rid
+        subs = SUB_LISTS[rid]
+        if not subs:
+            try:
+                save_region(user_id, region, region)
+            except Exception:
+                return await callback.answer("Failed to save region.", show_alert=True)
+            await callback.answer("Saved!")
+            next_index = get_last_answer_index(user_id)
+            user_progress[user_id] = next_index
+            if next_index < len(QUESTIONS):
+                return await send_or_edit_question(user_id, next_index)
+            msg = await bot.send_message(user_id, "🎉 Thank you! You have completed all questions for this month.")
+            LAST_MESSAGE_ID[user_id] = msg.message_id
             return
         try:
             await bot.edit_message_text(
@@ -144,28 +295,27 @@ async def handle_callback(callback: types.CallbackQuery):
                 reply_markup=build_subregion_keyboard(region),
             )
         except Exception:
-            # fallback to sending new message
             msg = await bot.send_message(user_id, f"Selected region: {region}. Now select your subregion:", reply_markup=build_subregion_keyboard(region))
             LAST_MESSAGE_ID[user_id] = msg.message_id
-        await callback.answer()
-        return
+        return await callback.answer()
 
+    # 2) Subregion selection
     if data.startswith("SUB:"):
         try:
-            payload = data.split(":", 1)[1]
-            region, sub = payload.split("|", 1)
+            rid_str, sid_str = data.split(":", 1)[1].split("|", 1)
+            rid, sid = int(rid_str), int(sid_str)
         except Exception:
-            await callback.answer("Invalid subregion.", show_alert=True)
-            return
-        if region not in REGIONS or sub not in REGIONS.get(region, []):
-            await callback.answer("Invalid subregion.", show_alert=True)
-            return
+            return await callback.answer("Invalid subregion.", show_alert=True)
+        if not (0 <= rid < len(REGION_NAMES)):
+            return await callback.answer("Invalid subregion.", show_alert=True)
+        subs = SUB_LISTS[rid]
+        if not (0 <= sid < len(subs)):
+            return await callback.answer("Invalid subregion.", show_alert=True)
+        region, sub = REGION_NAMES[rid], subs[sid]
         try:
             save_region(user_id, region, sub)
         except Exception:
-            await callback.answer("Failed to save region.", show_alert=True)
-            return
-        # Confirm and move to first question
+            return await callback.answer("Failed to save region.", show_alert=True)
         try:
             await bot.edit_message_text(
                 chat_id=callback.message.chat.id,
@@ -176,49 +326,90 @@ async def handle_callback(callback: types.CallbackQuery):
         except Exception:
             pass
         await callback.answer("Saved!")
-        # Start questions
         next_index = get_last_answer_index(user_id)
         user_progress[user_id] = next_index
         if next_index < len(QUESTIONS):
-            await send_or_edit_question(user_id, next_index)
-        else:
-            msg = await bot.send_message(user_id, "🎉 Thank you! You have completed all questions for this month.")
-            LAST_MESSAGE_ID[user_id] = msg.message_id
+            return await send_or_edit_question(user_id, next_index)
+        msg = await bot.send_message(user_id, "🎉 Thank you! You have completed all questions for this month.")
+        LAST_MESSAGE_ID[user_id] = msg.message_id
         return
 
-    # Otherwise expect question answer: "qid:opt_index"
+    # 3) Back from subregion to region list
+    if data.startswith("BACK:"):
+        _, target = data.split(":", 1)
+        if target == "REG":
+            selected_region.pop(user_id, None)
+            try:
+                await bot.edit_message_text(
+                    chat_id=callback.message.chat.id,
+                    message_id=callback.message.message_id,
+                    text="Please select your region:",
+                    reply_markup=build_region_keyboard(),
+                )
+            except Exception:
+                msg = await bot.send_message(user_id, "Please select your region:", reply_markup=build_region_keyboard())
+                LAST_MESSAGE_ID[user_id] = msg.message_id
+            return await callback.answer()
+
+    # 4) Back in questions
+    if data.startswith("BACKQ:"):
+        try:
+            qid = int(data.split(":", 1)[1])
+        except Exception:
+            return await callback.answer("Invalid action.")
+        if qid <= 0:
+            try:
+                await bot.edit_message_text(
+                    chat_id=callback.message.chat.id,
+                    message_id=callback.message.message_id,
+                    text="Please select your region:",
+                    reply_markup=build_region_keyboard(),
+                )
+            except Exception:
+                msg = await bot.send_message(user_id, "Please select your region:", reply_markup=build_region_keyboard())
+                LAST_MESSAGE_ID[user_id] = msg.message_id
+            return await callback.answer()
+        try:
+            delete_answer_current_month(user_id, qid - 1)
+        except Exception:
+            pass
+        await callback.answer()
+        return await send_or_edit_question(user_id, qid - 1)
+
+    # 5) Question answer "qid:opt"
     try:
         qid_str, opt_index_str = data.split(":", 1)
         qid = int(qid_str)
         opt_index = int(opt_index_str)
     except Exception:
-        await callback.answer("Invalid response.", show_alert=True)
-        return
-
-    # guard: qid must be within QUESTIONS
-    if qid < 0 or qid >= len(QUESTIONS):
-        await callback.answer("Question not found.", show_alert=True)
-        return
-
-    options = QUESTIONS[qid]["options"]
-    if opt_index < 0 or opt_index >= len(options):
-        await callback.answer("Invalid option.", show_alert=True)
-        return
-
+        return await callback.answer("Invalid response.", show_alert=True)
+    if not (0 <= qid < len(QUESTIONS)):
+        return await callback.answer("Question not found.", show_alert=True)
+    options = QUESTIONS[qid].get("options") or []
+    if not (0 <= opt_index < len(options)):
+        return await callback.answer("Invalid option.", show_alert=True)
     answer_text = options[opt_index]
     question_text = QUESTIONS[qid]["text"]
-
-    # store answer
-    try:
-        save_answer(user_id, qid, question_text, answer_text)
-    except Exception as e:
-        # DB error — notify user but try to continue
-        await callback.answer("Failed to save answer (DB error).", show_alert=True)
+    region_info = get_region_this_month(user_id)
+    if not region_info:
+        await callback.answer("Please select your region first.", show_alert=True)
+        try:
+            await bot.edit_message_text(
+                chat_id=callback.message.chat.id,
+                message_id=callback.message.message_id,
+                text="Please select your region:",
+                reply_markup=build_region_keyboard(),
+            )
+        except Exception:
+            msg = await bot.send_message(user_id, "Please select your region:", reply_markup=build_region_keyboard())
+            LAST_MESSAGE_ID[user_id] = msg.message_id
         return
-
-    # remove inline keyboard (so old options disappear) and update message to show chosen answer
+    region, subregion = region_info
     try:
-        # Replace message text to show chosen answer for clarity (optional)
+        save_answer(user_id, qid, question_text, answer_text, region, subregion)
+    except Exception:
+        return await callback.answer("Failed to save answer (DB error).", show_alert=True)
+    try:
         edited_text = f"✅ {question_text}\n\nYour answer: {answer_text}"
         await bot.edit_message_text(
             chat_id=callback.message.chat.id,
@@ -227,20 +418,13 @@ async def handle_callback(callback: types.CallbackQuery):
             reply_markup=None
         )
     except Exception:
-        # ignore edit errors
         pass
-
     await callback.answer("Saved!")
-
-    # recompute progress from DB and send next question in same message (edit if possible)
     next_index = get_last_answer_index(user_id)
     user_progress[user_id] = next_index
-
     if next_index >= len(QUESTIONS):
-        # finished: send a final message (we'll attempt to edit the same message; if fails, send new)
         final_text = "🎉 Thank you! You have completed all questions for this month."
         try:
-            # try to reuse same message id if possible
             if callback.message and callback.message.message_id:
                 await bot.edit_message_text(
                     chat_id=callback.message.chat.id,
@@ -248,19 +432,14 @@ async def handle_callback(callback: types.CallbackQuery):
                     text=final_text,
                     reply_markup=None
                 )
-                # update LAST_MESSAGE_ID to this final message id
                 LAST_MESSAGE_ID[user_id] = callback.message.message_id
                 return
         except Exception:
             pass
-
-        # fallback: send new message
         msg = await bot.send_message(user_id, final_text)
         LAST_MESSAGE_ID[user_id] = msg.message_id
         return
-
-    # send next question by editing same message (send_or_edit_question will do that)
-    await send_or_edit_question(user_id, next_index)
+    return await send_or_edit_question(user_id, next_index)
 
 
 async def resume_incomplete_on_start():
