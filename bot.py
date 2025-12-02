@@ -102,46 +102,35 @@ REGION_INDEX = {name: i for i, name in enumerate(REGION_NAMES)}
 SUB_LISTS = [REGIONS[name] for name in REGION_NAMES]
 
 # Full 37 questions
+# question.py
+
 QUESTIONS = [
     # A. Сегментация
     {"text": "3. Ёшингиз неччида?", "options": ["18–24", "25–34", "35–44", "45–54", "55–64", "65+"]},
-    {"text": "4. Қаерда ишлайсиз?", "options": ["Давлат ташкилоти", "Нодавлат ташкилоти", "Хусусий ташкилот", "Тадбиркорман", "Ўз-ўзимни банд қилганман", "Бошқа"]},
-    {"text": "5. Ойда ўртача нечи марта банкка ташриф буюрасиз?", "options": ["1-2 марта", "3-4 марта", "5-6 марта"]},
-    {"text": "6. Навбатда туриш қанча вақт олади?", "options": ["15 дақиқа", "30 дақиқа", "60 дақиқа", "1 соатдан кўп"]},
-    # B. Мижозларнинг банкда ўтказадиган вақти
-    {"text": "7. Кассада қайси тўловни амалга оширасиз?", "options": ["Коммунал хизматлар", "Солиқлар / жарималар", "Таълим тўлови", "Мобил ёки интернет тўловлари", "Касса амалиётлари", "Бошқа ___________"]},
-    {"text": "8. Нима учун тўловни касса орқали амалга оширишни афзал кўрасиз?", "options": ["Иловадан фойдалана олмайман", "Онлайн тўловларга ишонч йўқ", "Коғозли квитанция олиш учун", "Бошқа ___________", ""]},
-    {"text": "9. Касса орқали тўлов амалга оширишда қайси қийинчиликларга дуч келасиз?", "options": ["Навбат узоқ", "Ходим секин ишлайди", "Қийинчилик йўқ"]},
-    # C. Мижозларнинг банк ва тўлов инструментларига бўлган одатлари ва фикрларини билиш
-    {"text": "10. Agrobank мобил иловаси орқали тўлов амалга оширасизми?", "options": ["Ҳа", "Йўқ"]},
-    {"text": "11. Paynet инфокиоскидан фойдаланганмисиз?", "options": ["Ҳа", "Йўқ"]},
-    {"text": "12. Сизнингча, тўлов жараёнини янада тез ва қулай қилиш учун нима керак?", "options": []},
-    # D. Хизмат сифатини ошириш
-    {"text": "13. Банк офисларида хизмат сифатини 10 баллик шкала бўйича қандай баҳолайсиз?", "options": [str(i) for i in range(1, 11)]},
-    {"text": "14. Қайси хизматлар онлайн тақдим этилса янада қулай бўлар эди?", "options": ["Мобил илова орқали", "Банк сайти орқали", "Алоқа маркази орқали", "Ўз-ўзига хизмат кўрсатиш терминаллари орқали"]},
-    {"text": "15. Онлайн хизматлардан тез-тез фойдаланишга сизни нима рағбатлантиради?", "options": ["Осон ва тушунарли инструкциялар", "Хавфсизлик таъминоти кучлилиги", "Онлайн-амалиётлар учун чегирма ва бонуслар", "Ходимнинг онлайн ёрдами", "Бошқа"]},
-    {"text": "16. Мобил илова қулай бўлса, филиалга ташрифингиз қанчага камаяди?", "options": ["Умуман бормайман", "Камроқ бораман", "Камаймайди"]},
-    {"text": "17. Иловада қайси хизматларни онлайн кўришни истайсиз?", "options": []},
-    {"text": "18. Янгича хизмат жорий қилинса, қайси бири фойдали бўлади?", "options": []},
-    {"text": "19. Мобил илова дизайнини қандай баҳолайсиз?", "options": ["Зўр", "Ўртача", "Ёқмади"]},
-    {"text": "20. Тўлов вақтини 50% га камайтириш учун банк қайси чорани амалга ошириши керак?", "options": ["Қўшимча кассалар очиш", "Мобил ва онлайн тўлов имкониятларини кенгайтириш", "Навбатларни автоматлаштириш / рақамли навбат тизими"]},
-    {"text": "21. Сиз учун хизмат қулайлигида қайси омил биринчи ўринда?", "options": ["Навбат вақти қисқалиги", "Тўлов ва хизматларнинг тезлиги", "Хизмат сифати", "Онлайн ва мобил хизматлар имконияти", "Банк жойлашуви (филиалнинг қулайлиги)"]},
-    {"text": "22. Агар сиз банк ходими бўлганингизда, биринчи қандай хизматни ривожлантирган бўлардингиз?", "options": ["Онлайн ва мобил банк хизматларини оптималлаштириш", "Навбат ва тўлов жараёнларини самаралилаштириш", "Мижозларга консультация ва ёрдам кўрсатиш сифатини ошириш", "Янги инновацион банк хизматларини жорий қилиш"]},
-    {"text": "23. Қайси янги хизмат ёки функция сиз учун ҳақиқатан ҳам керак бўлар эди?", "options": []},
-    {"text": "24. Қайси вилоятда яшайсиз?", "options": list(REGIONS.keys())},
-    {"text": "25. Қайси шаҳарда (туман) истиқомат қиласиз?", "options": []},
-    {"text": "26. Ёшингиз неччида?", "options": ["18–24", "25–34", "35–44", "45–54", "55–64", "65+"]},
-    {"text": "27. Қаерда ишлайсиз?", "options": ["Давлат ташкилоти", "Нодавлат ташкилоти", "Хусусий ташкилот", "Тадбиркорман", "Ўз-ўзимни банд қилганман"]},
-    {"text": "28. Қайси турдаги омонатни сақлайсиз?", "options": ["Сандиқ", "Комфорт", "Прогресс", "Нихол", "Бахтли болалик", "Стимул", "Премиум"]},
-    {"text": "29. Омонат очишингизга нима туртки бўлган?", "options": ["Фоизлардан даромад олиш", "Пулни хавфсиз сақлаш", "Банкнинг ишончлилиги ва обрўси", "Онлайн ва мобил хизматлар имконияти"]},
-    {"text": "30. Бошқа банкларда омонат сақлайсизми?", "options": ["Ҳа", "Йўқ"]},
-    {"text": "31. Иловадан омонат бўйича қандай қийинчиликларга дуч келгансиз?", "options": ["Тизимда техник муаммолар бор", "Маълумот топиш қийин", "Процесс тушунарсиз ва мураккаб", "Тўлов ва аризаларда қийинчиликлар", "Ҳеч қандай қийинчилик йўқ"]},
-    {"text": "32. Қандай қўшимча функциялар керак деб ўйлайсиз?", "options": ["Автомат эслатмалар ва хабарномалар", "Онлайн маслаҳат / чат хизмати", "Очиқ жавоб"]},
-    {"text": "33. Омонат очиш сиздан қанча вақт олади?", "options": ["5–15 дақиқа", "30 дақиқа", "60 дақиқа", "1 соатдан кўп"]},
-    {"text": "34. Омонат муддатлари неча ойгача бўлиши сизга қулай?", "options": ["13 ой", "18 ой", "24 ой", "24 ойдан кўп"]},
-    {"text": "35. Сиз учун қайси турдаги омонат қулай?", "options": ["Тўлдириш мумкин бўлган", "Ечиб олиш мумкин бўлган", "Хорижий валютада", "Муддатли"]},
-    {"text": "36. Агробанк омонатларидан келгусида фойдаланиш эҳтимолингизни баҳоланг (0–10)", "options": [str(i) for i in range(0, 11)]},
-    {"text": "37. Қайси муддатдаги омонат сизга кўпроқ қулай?", "options": ["13 ой", "18 ой", "24 ой"]},
+    {"text": "4. Қаерда ишлайсиз?", "options": ["Давлат ташкилоти", "Нодавлат ташкилоти", "Хусусий ташкилот", "Тадбиркорман", "Ўз-ўзимни банд қилганман"]},
+
+    # C. Омонат турини аниқлаш
+    {"text": "5. Қайси турдаги омонатни сақлайсиз?", "options": ["Сандиқ", "Комфорт", "Прогресс", "Нихол", "Бахтли болалик", "Стимул", "Премиум"]},
+    {"text": "6. Омонат очишингизга нима туртки бўлган?", "options": ["Фоизлардан даромад олиш", "Пулни хавфсиз сақлаш", "Банкнинг ишончлилиги ва обрўси", "Онлайн ва мобил хизматлар имконияти"]},
+    {"text": "7. Бошқа банкларда омонат сақлайсизми?", "options": ["Ҳа", "Йўқ"]},
+
+    # D. Омонатдан фойдаланиш тўғрисида саволлар
+    {"text": "8. Иловадан омонат бўйича қандай қийинчиликларга дуч келгансиз?", 
+     "options": ["Тизимда техник муаммолар бор", "Маълумот топиш қийин", "Процесс тушунарсиз ва мураккаб", "Тўлов ва аризаларда қийинчиликлар", "Ҳеч қандай қийинчилик йўқ"]},
+    {"text": "9. Қандай қўшимча функциялар керак деб ўйлайсиз?", 
+     "options": ["Автомат эслатмалар ва хабарномалар", "Онлайн маслаҳат / чат хизмати", "Очиқ жавоб"]},
+    {"text": "10. Омонат очиш сиздан қанча вақт олади?", 
+     "options": ["5–15 дақиқа", "30 дақиқа", "60 дақиқа", "1 соатдан кўп"]},
+
+    # E. Омонатдан фойдаланиш тўғрисида саволлар
+    {"text": "11. Омонат муддатлари неча ойгача бўлиши сизга қулай?", 
+     "options": ["13 ой", "18 ой", "24 ой", "24 ойдан кўп"]},
+    {"text": "12. Сиз учун қайси турдаги омонат қулай?", 
+     "options": ["Тўлдириш мумкин бўлган", "Ечиб олиш мумкин бўлган", "Хорижий валютада", "Муддатли"]},
+    {"text": "13. Агробанк омонатларидан келгусида фойдаланиш эҳтимолингизни баҳоланг (0–10)", 
+     "options": [str(i) for i in range(0, 11)]},
+    {"text": "14. Қайси муддатдаги омонат сизга кўпроқ қулай?", 
+     "options": ["13 ой", "18 ой", "24 ой"]},
 ]
 
 # ---------------------------
@@ -226,11 +215,11 @@ async def start(message: types.Message):
     user_id = message.from_user.id
     # Enforce: only one completed submission per month
     if has_completed_this_month(user_id, total_questions=len(QUESTIONS)):
-        await message.answer("You have already completed the form for this month. Please try again next month.")
+        await message.answer("Siz bu oy uchun allaqachon formani to'ldirgansiz. Iltimos keyingi oy urinib ko'ring")
         return
 
     # Prompt region selection to begin the survey
-    text = "Please select your region:"
+    text = "Hududingizni tanlang:"
     kb = build_region_keyboard()
     msg = await message.answer(text, reply_markup=kb)
     LAST_MESSAGE_ID[user_id] = msg.message_id
@@ -251,7 +240,7 @@ async def my_region(message: types.Message):
 async def region_cmd(message: types.Message):
     user_id = message.from_user.id
     if has_completed_this_month(user_id, total_questions=len(QUESTIONS)):
-        await message.answer("You have already completed the form for this month. Please try again next month.")
+        await message.answer("Siz bu oy uchun allaqachon formani to'ldirgansiz. Iltimos keyingi oy urinib ko'ring")
         return
     text = "Iltimos hududingizni tanlang!:"
     kb = build_region_keyboard()
@@ -284,18 +273,18 @@ async def handle_callback(callback: types.CallbackQuery):
             user_progress[user_id] = next_index
             if next_index < len(QUESTIONS):
                 return await send_or_edit_question(user_id, next_index)
-            msg = await bot.send_message(user_id, "🎉 Thank you! You have completed all questions for this month.")
+            msg = await bot.send_message(user_id, "🎉 E'tiboringiz uchun rahmat! Siz allaqachon bu oy uchun so'rovnama to'ldirgansiz.")
             LAST_MESSAGE_ID[user_id] = msg.message_id
             return
         try:
             await bot.edit_message_text(
                 chat_id=callback.message.chat.id,
                 message_id=callback.message.message_id,
-                text=f"Selected region: {region}. Now select your subregion:",
+                text=f"Tanlangan hudud: {region}. Endi tumanni tanlashingiz mumkin!",
                 reply_markup=build_subregion_keyboard(region),
             )
         except Exception:
-            msg = await bot.send_message(user_id, f"Selected region: {region}. Now select your subregion:", reply_markup=build_subregion_keyboard(region))
+            msg = await bot.send_message(user_id, f"Tanlangan viloyat: {region}. Tanlangan tuman:", reply_markup=build_subregion_keyboard(region))
             LAST_MESSAGE_ID[user_id] = msg.message_id
         return await callback.answer()
 
@@ -330,7 +319,7 @@ async def handle_callback(callback: types.CallbackQuery):
         user_progress[user_id] = next_index
         if next_index < len(QUESTIONS):
             return await send_or_edit_question(user_id, next_index)
-        msg = await bot.send_message(user_id, "🎉 Thank you! You have completed all questions for this month.")
+        msg = await bot.send_message(user_id, "🎉E'tiboringiz uchun rahmat! Siz barcha savollarga savob berdingiz!")
         LAST_MESSAGE_ID[user_id] = msg.message_id
         return
 
@@ -347,7 +336,7 @@ async def handle_callback(callback: types.CallbackQuery):
                     reply_markup=build_region_keyboard(),
                 )
             except Exception:
-                msg = await bot.send_message(user_id, "Please select your region:", reply_markup=build_region_keyboard())
+                msg = await bot.send_message(user_id, "Ilitmos hududingizni tanlang:", reply_markup=build_region_keyboard())
                 LAST_MESSAGE_ID[user_id] = msg.message_id
             return await callback.answer()
 
@@ -356,17 +345,17 @@ async def handle_callback(callback: types.CallbackQuery):
         try:
             qid = int(data.split(":", 1)[1])
         except Exception:
-            return await callback.answer("Invalid action.")
+            return await callback.answer("Noma'lum buyruq.")
         if qid <= 0:
             try:
                 await bot.edit_message_text(
                     chat_id=callback.message.chat.id,
                     message_id=callback.message.message_id,
-                    text="Please select your region:",
+                    text="Iltimost hududni tanlang:",
                     reply_markup=build_region_keyboard(),
                 )
             except Exception:
-                msg = await bot.send_message(user_id, "Please select your region:", reply_markup=build_region_keyboard())
+                msg = await bot.send_message(user_id, "Iltimos hududingizni tanlang:", reply_markup=build_region_keyboard())
                 LAST_MESSAGE_ID[user_id] = msg.message_id
             return await callback.answer()
         try:
@@ -392,16 +381,16 @@ async def handle_callback(callback: types.CallbackQuery):
     question_text = QUESTIONS[qid]["text"]
     region_info = get_region_this_month(user_id)
     if not region_info:
-        await callback.answer("Please select your region first.", show_alert=True)
+        await callback.answer("Iltimos birinchi hududingizni tanlang.", show_alert=True)
         try:
             await bot.edit_message_text(
                 chat_id=callback.message.chat.id,
                 message_id=callback.message.message_id,
-                text="Please select your region:",
+                text="Iltimos Viloyatni tanlang:",
                 reply_markup=build_region_keyboard(),
             )
         except Exception:
-            msg = await bot.send_message(user_id, "Please select your region:", reply_markup=build_region_keyboard())
+            msg = await bot.send_message(user_id, "Iltimos Viloyatni tanlang:", reply_markup=build_region_keyboard())
             LAST_MESSAGE_ID[user_id] = msg.message_id
         return
     region, subregion = region_info
@@ -423,7 +412,7 @@ async def handle_callback(callback: types.CallbackQuery):
     next_index = get_last_answer_index(user_id)
     user_progress[user_id] = next_index
     if next_index >= len(QUESTIONS):
-        final_text = "🎉 Thank you! You have completed all questions for this month."
+        final_text = "🎉 Rahmat! Siz barcha savollarga javob berdingiz"
         try:
             if callback.message and callback.message.message_id:
                 await bot.edit_message_text(
@@ -442,6 +431,42 @@ async def handle_callback(callback: types.CallbackQuery):
     return await send_or_edit_question(user_id, next_index)
 
 
+@dp.message()
+async def handle_text_message(message: types.Message):
+    user_id = message.from_user.id
+    if user_id not in expected_open_question:
+        return
+    qid = expected_open_question.pop(user_id)
+    answer_text = (message.text or "").strip()
+    if not answer_text:
+        return
+    region_info = get_region_this_month(user_id)
+    if not region_info:
+        msg = await message.answer("Hududingizni tanlang:", reply_markup=build_region_keyboard())
+        LAST_MESSAGE_ID[user_id] = msg.message_id
+        return
+    region, subregion = region_info
+    question_text = QUESTIONS[qid]["text"]
+    try:
+        save_answer(user_id, qid, question_text, answer_text, region, subregion)
+    except Exception:
+        await message.answer("Failed to save answer (DB error). Try again.")
+        return
+    try:
+        if user_id in LAST_MESSAGE_ID:
+            edited_text = f"✅ {question_text}\n\nSizning javobingiz: {answer_text}"
+            await bot.edit_message_text(chat_id=user_id, message_id=LAST_MESSAGE_ID[user_id], text=edited_text, reply_markup=None)
+    except Exception:
+        pass
+    next_index = get_last_answer_index(user_id)
+    user_progress[user_id] = next_index
+    if next_index >= len(QUESTIONS):
+        msg = await bot.send_message(user_id, "🎉E'tiboringiz uchun rahmat! Siz barcha savollarga savob berdingiz")
+        LAST_MESSAGE_ID[user_id] = msg.message_id
+        return
+    await send_or_edit_question(user_id, next_index)
+
+
 async def resume_incomplete_on_start():
     """
     On bot startup: find users who have started this month but haven't finished,
@@ -452,7 +477,7 @@ async def resume_incomplete_on_start():
         try:
             # If user hasn't set region for this month, prompt for it first
             if not get_region_this_month(uid):
-                msg = await bot.send_message(uid, "Please select your region:", reply_markup=build_region_keyboard())
+                msg = await bot.send_message(uid, "Ilitingizni tanlang:", reply_markup=build_region_keyboard())
                 LAST_MESSAGE_ID[uid] = msg.message_id
                 continue
             next_index = get_last_answer_index(uid)
